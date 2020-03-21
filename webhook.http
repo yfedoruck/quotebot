@@ -1,0 +1,7 @@
+### set webhook mode
+#GET https://api.telegram.org/bot{my_bot_token}/setWebhook?url=https://antic-quotes-bot.herokuapp.com/{my_bot_token}
+
+# webhook info
+GET https://api.telegram.org/bot{my_bot_token}/getWebhookInfo
+Accept: application/json
+###

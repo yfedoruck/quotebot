@@ -8,6 +8,7 @@ import (
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -63,12 +64,20 @@ func main() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	updates, err := bot.GetUpdatesChan(u)
-	check(err)
+	// long pooling
+	// updates, err := bot.GetUpdatesChan(u)
+	// check(err)
+
+	// web hooks for awake heroku from idling
+	updates := bot.ListenForWebhook("/" + bot.Token)
 
 	var session map[int]string
 	session = make(map[int]string)
 	var library Library
+
+	// hack for work on heroku
+	http.HandleFunc("/", MainHandler)
+	go http.ListenAndServe(":"+os.Getenv("PORT"), nil)
 
 	for update := range updates {
 		if update.CallbackQuery != nil {
@@ -225,4 +234,8 @@ func authorColumn(chatId int64, library Library) tgbotapi.MessageConfig {
 	}
 	msg.ReplyMarkup = keyboard
 	return msg
+}
+
+func MainHandler(resp http.ResponseWriter, _ *http.Request) {
+	resp.Write([]byte("Hi there! I'm DndSpellsBot!"))
 }
