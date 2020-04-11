@@ -2,9 +2,9 @@ package web
 
 import (
 	"encoding/json"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/yfedoruck/quotebot/pkg/env"
 	"github.com/yfedoruck/quotebot/pkg/fail"
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
 	"os"
 	"path/filepath"
 )

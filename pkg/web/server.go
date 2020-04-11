@@ -4,9 +4,9 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/yfedoruck/quotebot/pkg/env"
 	"github.com/yfedoruck/quotebot/pkg/fail"
-	tgbotapi "gopkg.in/telegram-bot-api.v4"
 	"log"
 	"math/rand"
 	"net/http"
@@ -23,18 +23,21 @@ func (s *Server) Start() {
 	bot, err := tgbotapi.NewBotAPI(Token())
 	fail.Check(err)
 
-	bot.Debug = false
+	bot.Debug = true
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
 	// long pooling
-	updates, err := bot.GetUpdatesChan(u)
-	fail.Check(err)
+	//updates, err := bot.GetUpdatesChan(u)
+	//fail.Check(err)
 
 	// web hooks for awake heroku from idling
-	//updates := bot.ListenForWebhook("/" + bot.Token)
+	conf := tgbotapi.NewWebhook("https://antic-quotes-bot.herokuapp.com/" + bot.Token)
+	_, err = bot.SetWebhook(conf)
+	fail.Check(err)
+	updates := bot.ListenForWebhook("/" + bot.Token)
 
 	var session map[int]string
 	session = make(map[int]string)
