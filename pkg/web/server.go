@@ -1,62 +1,27 @@
-package main
+package web
 
 import (
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/yfedoruck/quotebot/pkg/env"
+	"github.com/yfedoruck/quotebot/pkg/fail"
 	tgbotapi "gopkg.in/telegram-bot-api.v4"
 	"log"
 	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 )
 
-func check(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
+type Server struct {
+	Port string
 }
 
-type Config struct {
-	TelegramBotToken string
-}
+func (s *Server) Start() {
 
-func token() string {
-	file, err := os.Open(basePath() + filepath.FromSlash("/config.json"))
-	check(err)
-
-	decoder := json.NewDecoder(file)
-	configuration := Config{}
-
-	err = decoder.Decode(&configuration)
-	check(err)
-
-	return configuration.TelegramBotToken
-}
-
-func quotesByAuthor(name string, authorList []Author) (Author, error) {
-	for _, author := range authorList {
-		if author.Name == name {
-			return author, nil
-		}
-	}
-	return Author{}, errors.New("author not found")
-}
-
-func formatQuote(quote, author string) string {
-	return fmt.Sprintf(
-		"“_%s_“\n "+
-			"``` — %s ```\n",
-		quote,
-		author)
-}
-
-func main() {
-	bot, err := tgbotapi.NewBotAPI(token())
-	check(err)
+	bot, err := tgbotapi.NewBotAPI(Token())
+	fail.Check(err)
 
 	bot.Debug = false
 	log.Printf("Authorized on account %s", bot.Self.UserName)
@@ -65,20 +30,24 @@ func main() {
 	u.Timeout = 60
 
 	// long pooling
-	_, _ = bot.RemoveWebhook()
-	updates, err := bot.GetUpdatesChan(u)
-	check(err)
+	//updates, err := bot.GetUpdatesChan(u)
+	//fail.Check(err)
 
 	// web hooks for awake heroku from idling
-	//updates := bot.ListenForWebhook("/" + bot.Token)
+	updates := bot.ListenForWebhook("/" + bot.Token)
+
+	//updates := Updates(bot)
 
 	var session map[int]string
 	session = make(map[int]string)
 	var library Library
 
-	// hack for work on heroku
-	http.HandleFunc("/", MainHandler)
-	go http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+	log.Println("Starting web server on", s.Port)
+	go func() {
+		if err := http.ListenAndServe(":"+s.Port, nil); err != nil {
+			log.Fatal("ListenAndServe:", err)
+		}
+	}()
 
 	for update := range updates {
 		if update.CallbackQuery != nil {
@@ -87,11 +56,11 @@ func main() {
 			session[update.CallbackQuery.From.ID] = philosopher
 
 			_, err := bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
-			check(err)
+			fail.Check(err)
 
 			library = quotes(library)
 			author, err := quotesByAuthor(philosopher, library.AuthorList)
-			check(err)
+			fail.Check(err)
 
 			l := len(author.Quote.TextList)
 			num := rand.Intn(l)
@@ -100,7 +69,7 @@ func main() {
 			msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, text)
 			msg.ParseMode = "markdown"
 			_, err = bot.Send(msg)
-			check(err)
+			fail.Check(err)
 			continue
 		}
 
@@ -119,7 +88,7 @@ func main() {
 			philosopher := library.AuthorList[num]
 
 			author, err := quotesByAuthor(philosopher.Name, library.AuthorList)
-			check(err)
+			fail.Check(err)
 
 			l2 := len(author.Quote.TextList)
 			num2 := rand.Intn(l2)
@@ -132,7 +101,7 @@ func main() {
 			if philosopher, ok := session[update.Message.From.ID]; ok {
 				library = quotes(library)
 				author, err := quotesByAuthor(philosopher, library.AuthorList)
-				check(err)
+				fail.Check(err)
 
 				l := len(author.Quote.TextList)
 				num := rand.Intn(l)
@@ -149,8 +118,21 @@ func main() {
 		msg.ParseMode = "markdown"
 
 		_, err := bot.Send(msg)
-		check(err)
+		fail.Check(err)
 	}
+
+}
+
+func NewServer() *Server {
+	s := &Server{}
+	s.Port = env.Port()
+	http.HandleFunc("/", MainHandler)
+	return s
+}
+
+func MainHandler(resp http.ResponseWriter, _ *http.Request) {
+	_, err := resp.Write([]byte("Hi there! I'm AnticQuoteBot!"))
+	fail.Check(err)
 }
 
 type Library struct {
@@ -171,32 +153,24 @@ type Author struct {
 	Quote    Quote    `xml:"quote"`
 }
 
-func basePath() string {
-	_, b, _, ok := runtime.Caller(0)
-	if !ok {
-		log.Panic("Caller error")
-	}
-	return filepath.Dir(b)
-}
-
 func quotes(library Library) Library {
 
 	if library.loaded {
 		return library
 	}
 
-	file, err := os.Open(basePath() + filepath.FromSlash("/data/quote.xml"))
-	check(err)
+	file, err := os.Open(env.BasePath() + filepath.FromSlash("/data/quote.xml"))
+	fail.Check(err)
 
 	fi, err := file.Stat()
-	check(err)
+	fail.Check(err)
 
 	var data = make([]byte, fi.Size())
 	_, err = file.Read(data)
-	check(err)
+	fail.Check(err)
 
 	err = xml.Unmarshal(data, &library)
-	check(err)
+	fail.Check(err)
 
 	library.loaded = true
 	return library
@@ -237,6 +211,19 @@ func authorColumn(chatId int64, library Library) tgbotapi.MessageConfig {
 	return msg
 }
 
-func MainHandler(resp http.ResponseWriter, _ *http.Request) {
-	resp.Write([]byte("Hi there! I'm DndSpellsBot!"))
+func quotesByAuthor(name string, authorList []Author) (Author, error) {
+	for _, author := range authorList {
+		if author.Name == name {
+			return author, nil
+		}
+	}
+	return Author{}, errors.New("author not found")
+}
+
+func formatQuote(quote, author string) string {
+	return fmt.Sprintf(
+		"“_%s_“\n "+
+			"``` — %s ```\n",
+		quote,
+		author)
 }
