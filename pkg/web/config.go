@@ -36,6 +36,9 @@ func Updates(bot *tgbotapi.BotAPI) tgbotapi.UpdatesChannel {
 
 // long pooling for localhost
 func longPooling(bot *tgbotapi.BotAPI) tgbotapi.UpdatesChannel {
+	u := tgbotapi.NewUpdate(0)
+	u.Timeout = 60
+
 	_, err := bot.RemoveWebhook()
 	fail.Check(err)
 

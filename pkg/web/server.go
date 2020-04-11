@@ -26,9 +26,6 @@ func (s *Server) Start() {
 	bot.Debug = true
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
 	updates := Updates(bot)
 
 	var session map[int]string
