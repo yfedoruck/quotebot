@@ -30,13 +30,11 @@ func (s *Server) Start() {
 	u.Timeout = 60
 
 	// long pooling
-	//updates, err := bot.GetUpdatesChan(u)
-	//fail.Check(err)
+	updates, err := bot.GetUpdatesChan(u)
+	fail.Check(err)
 
 	// web hooks for awake heroku from idling
-	updates := bot.ListenForWebhook("/" + bot.Token)
-
-	//updates := Updates(bot)
+	//updates := bot.ListenForWebhook("/" + bot.Token)
 
 	var session map[int]string
 	session = make(map[int]string)

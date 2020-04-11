@@ -12,13 +12,13 @@ COPY . .
 
 RUN mkdir /quotebot
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/quotebot github.com/yfedoruck/quotebot
+RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/quotebot github.com/yfedoruck/quotebot/cmd/bot
 
 FROM alpine:3.11
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /go/src/quotebot /go/src/quotebot
 COPY --from=builder /bin/quotebot /bin/quotebot
 
-# Run the outyet command by default when the container starts.
+# Run the quotebot by default when the container starts.
 CMD ["/bin/quotebot"]
 EXPOSE 5000
