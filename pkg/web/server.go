@@ -29,15 +29,7 @@ func (s *Server) Start() {
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	// long pooling
-	//updates, err := bot.GetUpdatesChan(u)
-	//fail.Check(err)
-
-	// web hooks for awake heroku from idling
-	conf := tgbotapi.NewWebhook("https://antic-quotes-bot.herokuapp.com/" + bot.Token)
-	_, err = bot.SetWebhook(conf)
-	fail.Check(err)
-	updates := bot.ListenForWebhook("/" + bot.Token)
+	updates := Updates(bot)
 
 	var session map[int]string
 	session = make(map[int]string)

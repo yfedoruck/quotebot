@@ -36,9 +36,6 @@ func Updates(bot *tgbotapi.BotAPI) tgbotapi.UpdatesChannel {
 
 // long pooling for localhost
 func longPooling(bot *tgbotapi.BotAPI) tgbotapi.UpdatesChannel {
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
-
 	_, err := bot.RemoveWebhook()
 	fail.Check(err)
 
@@ -51,7 +48,7 @@ func longPooling(bot *tgbotapi.BotAPI) tgbotapi.UpdatesChannel {
 // web hooks for awake heroku from idling
 func webHooks(bot *tgbotapi.BotAPI) tgbotapi.UpdatesChannel {
 
-	conf := tgbotapi.NewWebhook("https://api.telegram.org/bot" + bot.Token + "/setWebhook?url=https://antic-quotes-bot.herokuapp.com/bot" + bot.Token)
+	conf := tgbotapi.NewWebhook("https://antic-quotes-bot.herokuapp.com/" + bot.Token)
 	_, err := bot.SetWebhook(conf)
 	fail.Check(err)
 
