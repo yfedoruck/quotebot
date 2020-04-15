@@ -69,6 +69,8 @@ func (s *Server) Start() {
 
 		msg := tgbotapi.NewMessage(update.Message.Chat.ID, "")
 		switch update.Message.Command() {
+		case "start":
+			msg.Text = "Bot prints quotes of famous philosophers. Type /rand or /list"
 		case "help":
 			msg.Text = "Bot prints quotes of famous philosophers. Type /rand or /list"
 		case "rand":
