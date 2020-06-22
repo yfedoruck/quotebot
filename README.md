@@ -1,1 +1,1 @@
-Telegram link: [Antic quotes bot](https://t.me/quotebot).
+Telegram link: [Antic quotes bot](https://t.me/anticQuotesBot).
